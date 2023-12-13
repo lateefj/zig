@@ -1020,7 +1020,6 @@ pub const InitOptions = struct {
     /// building such dependencies themselves, this flag must be set to avoid
     /// infinite recursion.
     skip_linker_dependencies: bool = false,
-    parent_compilation_link_libc: bool = false,
     hash_style: link.HashStyle = .both,
     entry: ?[]const u8 = null,
     force_undefined_symbols: std.StringArrayHashMapUnmanaged(void) = .{},
@@ -1366,7 +1365,6 @@ pub fn create(gpa: Allocator, options: InitOptions) !*Compilation {
             hash.addOptionalBytes(options.test_filter);
             hash.addOptionalBytes(options.test_name_prefix);
             hash.add(comp.skip_linker_dependencies);
-            hash.add(options.parent_compilation_link_libc);
             hash.add(formatted_panics);
             hash.add(options.emit_h != null);
             hash.add(error_limit);
@@ -1708,7 +1706,6 @@ pub fn create(gpa: Allocator, options: InitOptions) !*Compilation {
                 .soname = options.soname,
                 .compatibility_version = options.compatibility_version,
                 .dll_export_fns = dll_export_fns,
-                .parent_compilation_link_libc = options.parent_compilation_link_libc,
                 .each_lib_rpath = each_lib_rpath,
                 .build_id = build_id,
                 .disable_lld_caching = options.disable_lld_caching or cache_mode == .whole,
@@ -2451,7 +2448,6 @@ fn addNonIncrementalStuffToCacheManifest(comp: *Compilation, man: *Cache.Manifes
         man.hash.addOptionalBytes(comp.test_filter);
         man.hash.addOptionalBytes(comp.test_name_prefix);
         man.hash.add(comp.skip_linker_dependencies);
-        man.hash.add(comp.bin_file.options.parent_compilation_link_libc);
         man.hash.add(comp.formatted_panics);
         man.hash.add(mod.emit_h != null);
         man.hash.add(mod.error_limit);
@@ -6210,6 +6206,7 @@ fn buildOutputFromZig(
         .have_zcu = true,
         .emit_bin = true,
         .root_optimize_mode = comp.compilerRtOptMode(),
+        .link_libc = comp.config.link_libc,
     });
 
     const root_mod = Package.Module.create(.{
@@ -6226,6 +6223,7 @@ fn buildOutputFromZig(
             .omit_frame_pointer = comp.root_mod.omit_frame_pointer,
             .unwind_tables = comp.bin_file.options.eh_frame_hdr,
             .pic = comp.root_mod.pic,
+            .optimize_mode = comp.compilerRtOptMode(),
         },
         .global = config,
         .cc_argv = &.{},
@@ -6270,7 +6268,6 @@ fn buildOutputFromZig(
         .verbose_llvm_cpu_features = comp.verbose_llvm_cpu_features,
         .clang_passthrough_mode = comp.clang_passthrough_mode,
         .skip_linker_dependencies = true,
-        .parent_compilation_link_libc = comp.config.link_libc,
         .want_structured_cfg = comp.bin_file.options.want_structured_cfg,
     });
     defer sub_compilation.destroy();
@@ -6351,7 +6348,6 @@ pub fn build_crt_file(
         .verbose_llvm_cpu_features = comp.verbose_llvm_cpu_features,
         .clang_passthrough_mode = comp.clang_passthrough_mode,
         .skip_linker_dependencies = true,
-        .parent_compilation_link_libc = comp.config.link_libc,
         .want_structured_cfg = comp.bin_file.options.want_structured_cfg,
     });
     defer sub_compilation.destroy();
