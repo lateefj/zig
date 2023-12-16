@@ -1452,7 +1452,7 @@ pub fn create(gpa: Allocator, options: InitOptions) !*Compilation {
 
         comp.* = .{
             .gpa = gpa,
-            .arena = arena_allocator,
+            .arena = undefined, // populated after we are finished with `arena`
             .module = opt_zcu,
             .cache_use = undefined, // populated below
             .bin_file = null, // populated below
@@ -1595,7 +1595,7 @@ pub fn create(gpa: Allocator, options: InitOptions) !*Compilation {
                 hash.add(options.config.test_evented_io);
                 hash.addOptionalBytes(options.test_filter);
                 hash.addOptionalBytes(options.test_name_prefix);
-                hash.add(comp.skip_linker_dependencies);
+                hash.add(options.skip_linker_dependencies);
                 hash.add(formatted_panics);
                 hash.add(options.emit_h != null);
                 hash.add(error_limit);
@@ -1676,6 +1676,7 @@ pub fn create(gpa: Allocator, options: InitOptions) !*Compilation {
             },
         }
 
+        comp.arena = arena_allocator;
         break :comp comp;
     };
     errdefer comp.destroy();
